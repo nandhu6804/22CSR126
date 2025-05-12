@@ -36,13 +36,35 @@ app.get('/numbers/:id', async (req, res) => {
   let newNumbers = [];
 
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const headers = {
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJNYXBDbGFpbXMiOnsiZXhwIjoxNzQ3MDMyNTUyLCJpYXQiOjE3NDcwMzIyNTIsImlzcyI6IkFmZm9yZG1lZCIsImp0aSI6IjJhMmFlYWJkLWIwZDMtNGNiNC1iZDViLTMwOWUxM2YxMGZjZiIsInN1YiI6Im5hbmRoaXRoYXAuMjJjc2VAa29uZ3UuZWR1In0sImVtYWlsIjoibmFuZGhpdGhhcC4yMmNzZUBrb25ndS5lZHUiLCJuYW1lIjoibmFuZGhpdGhhIHAiLCJyb2xsTm8iOiIyMmNzcjEyNiIsImFjY2Vzc0NvZGUiOiJqbXBaYUYiLCJjbGllZW50SUQiOiIyYTFkYmNhZC0wNzMwLTFkMjgtOWFjMy1mZDQzLTA1ZDgyYzg0M2ZjYSJ9'
+    };
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: headers
+    });
+
+    console.log('Response Status:', response.status);
+    console.log('Response Headers:', response.headers);
+
     const data = await response.json();
-    newNumbers = data.numbers;
+    console.log('Fetched data from external API:', data);
+
+    if (data.message) {
+      console.log('Authorization Error:', data.message); // Log the error message
+      return res.status(401).json({ error: data.message });
+    }
+
+    newNumbers = data.numbers || [];
   } catch (err) {
+    console.error('Error fetching from external API:', err);
     return res.status(500).json({ error: 'Failed to fetch from external API within 500ms' });
   } finally {
     clearTimeout(timeout);
+  }
+
+  if (newNumbers.length === 0) {
+    return res.status(500).json({ error: 'No numbers found in the response from external API' });
   }
 
   const windowPrevState = [...windowData];
